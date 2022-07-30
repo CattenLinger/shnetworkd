@@ -87,12 +87,11 @@ __daemon_zone() {
     #
     log_info "[Zone][$name] Execute zone configuration."
     chmod +x "$zone_up_file"
-    if [ ! { RUNTIME_DIR="$RUNTIME_DIR" "$zone_up_file" 2>&1 | log_tofile "$log_file"; } ]
-    then
+    ( RUNTIME_DIR="$RUNTIME_DIR" "$zone_up_file" 2>&1 | log_tofile "$log_file" ) || {
         log_error "[Zone][$name] Error while activating zone." 2>&1 | log_tofile "$log_file";
         exit 1;
-    fi
-
+    }
+    
     echo "up" > "$stage_file"
 
     BUS="$manager_bus"
