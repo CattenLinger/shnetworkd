@@ -8,6 +8,7 @@ __private_busWatchDog_stop() {
     assertNotBlank s"$busLocation" "[Bus Watchdog] Parameter 1(bus_location) required."
 
     local pid_file="$RUNTIME_DIR/bus_watchdog.pid"
+    [ ! -f "$pid_file" ] && return 0
 
     local _pid=$(cat "$pid_file")
     [ b'true' != b"$(pid_alive $_pid)" ] && return 0
