@@ -74,7 +74,7 @@ _main() {
     then
         local targetName="${target:2}"
         local functionName="__daemon_$targetName"
-        . "$SHNETWORKD_HOME/lib/modules/daemons/$targetName"
+        . "$SHNETWORKD_HOME/modules/daemons/$targetName"
         
         if [ ! $(declare -F "$functionName" ) ]
         then
