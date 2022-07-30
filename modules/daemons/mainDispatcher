@@ -2,9 +2,7 @@
 # Main cli dispatcher
 #
 
-__daemon_mainDispatcher() {
-    require mkfifo
-
+__private_mainDispatcher_prepare() {
     use RuntimeDir "$SHNETWORKD_RUN_DIR"
     use ShutdownHook "shnetworkd"
     
@@ -24,8 +22,14 @@ __daemon_mainDispatcher() {
     local log_file="$RUNTIME_DIR/log"
     echo "================ shnetworkd dispatcher start at $(date +%m/%d/%y\ %H:%M:%S) ================" >> $log_file
     
-    local fifos=($inbound_file $message_bus)
-    for fifo in ${fifos[@]}; do [ -p "$fifo" ] || mkfifo $fifo; done
+    local fifos=("$inbound_file" "$message_bus")
+    for fifo in ${fifos[@]}; do [ -p "$fifo" ] || mkfifo "$fifo"; done
+}
+
+__daemon_mainDispatcher() {
+    require mkfifo
+
+    __private_mainDispatcher_prepare
 
     eval "$SHNETWORKD ::busWatchDog $message_bus 2>&1" | tee -a "$log_file" &
     log_info "Start bus watchdog." | log_tofile "$log_file"
