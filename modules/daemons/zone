@@ -64,15 +64,14 @@ __daemon_zone() {
     # Generate zone_up and zone_down
     #
     log_info "[Zone][$name] Generate zone_up."
-    
-    [ ("$SHNETWORKD" ::configureNetwork "$DATA_DIR/$name" up 2> "$RUNTIME_DIR/zone_gen.log" > "$zone_up_file") ] || {
+    ("$SHNETWORKD" ::configureNetwork "$DATA_DIR/$name" up 2> "$RUNTIME_DIR/zone_gen.log" > "$zone_up_file") || {
         log_error "[Zone][$name] Error when composing network configuration for zone." 2>&1 | log_tofile "$log_file"
         exit 1
     }
     
     log_info "[Zone][$name] Generate zone_down."
     
-    [ ("$SHNETWORKD" ::configureNetwork "$DATA_DIR/$name" down 2> "$RUNTIME_DIR/zone_gen.log" > "$zone_down_file") ] || {
+    ("$SHNETWORKD" ::configureNetwork "$DATA_DIR/$name" down 2> "$RUNTIME_DIR/zone_gen.log" > "$zone_down_file") || {
         log_error "[Zone][$name] Error when composing network configuration for zone." 2>&1 | log_tofile "$log_file"
         exit 1
     }
