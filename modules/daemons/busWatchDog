@@ -1,6 +1,8 @@
 #
 # Bus watchdog
 #
+set -e
+
 __daemon_busWatchDog() {
     local busLocation="$1"
 

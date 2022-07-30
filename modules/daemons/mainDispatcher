@@ -2,6 +2,8 @@
 # Main cli dispatcher
 #
 
+set -e
+
 __private_mainDispatcher_prepare() {
     use RuntimeDir "$SHNETWORKD_RUN_DIR"
     use ShutdownHook "shnetworkd"
