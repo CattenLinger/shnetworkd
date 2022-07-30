@@ -18,6 +18,7 @@ __private_mainDispatcher_prepare() {
     ShutdownHook_appendAction "rm -rf $pid_file"
 
     local buffer_file="$RUNTIME_DIR/.shnetworkd.buffer"
+    touch "$buffer_file"
     chmod +x "$buffer_file"
     ShutdownHook_appendAction "rm -rf $buffer_file"
 
