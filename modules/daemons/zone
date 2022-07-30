@@ -72,7 +72,7 @@ __daemon_zone() {
     fi
 
     log_info "[Zone][$name] Generate zone_down."
-    "SHNETWORKD" ::configureNetwork "$DATA_DIR/$name" down 2> "$RUNTIME_DIR/zone_gen.log" > "$zone_down_file"
+    "$SHNETWORKD" ::configureNetwork "$DATA_DIR/$name" down 2> "$RUNTIME_DIR/zone_gen.log" > "$zone_down_file"
     if [ i'0' != i"$?" ]
     then 
         log_error "[Zone][$name] Error when composing network configuration for zone." 2>&1 | log_tofile "$log_file"
