@@ -88,7 +88,7 @@ used() {
     local name="$1"
     assertNotBlank s"$name" "[use] Parameter 1(name) required."
 
-    local useKey="__dic_reg_used_$name"
+    local useKey="____dic_reg_used_$name"
     eval 'echo $'"$useKey"
 }
 
