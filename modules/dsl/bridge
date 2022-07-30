@@ -28,7 +28,7 @@ __dsl_init_bridge() {
         cat <<< "
         if [ i'0' == i""\$(ip -o link | awk '/^[0-9]+?\s?$bridgeName/' | wc -l)"" ]
         then
-            ip link add $__DSL_CONTEXT_V_BRIDGE_NAME type bridge
+            ip link add name $__DSL_CONTEXT_V_BRIDGE_NAME type bridge
             ip link set $__DSL_CONTEXT_V_BRIDGE_NAME up 
         fi
         instance_location='$SHNETWORKD_RUN_DIR/bridges/$bridgeName'
