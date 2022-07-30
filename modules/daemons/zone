@@ -65,7 +65,7 @@ __daemon_zone() {
     #
     log_info "[Zone][$name] Generate zone_up."
     
-    if [ ! { "$SHNETWORKD" ::configureNetwork "$DATA_DIR/$name" up 2> "$RUNTIME_DIR/zone_gen.log" > "$zone_up_file"; } ]
+    if [ ! ("$SHNETWORKD" ::configureNetwork "$DATA_DIR/$name" up 2> "$RUNTIME_DIR/zone_gen.log" > "$zone_up_file") ]
     then
         log_error "[Zone][$name] Error when composing network configuration for zone." 2>&1 | log_tofile "$log_file"
         exit 1
@@ -73,11 +73,10 @@ __daemon_zone() {
 
     log_info "[Zone][$name] Generate zone_down."
     
-    if [ ! { "$SHNETWORKD" ::configureNetwork "$DATA_DIR/$name" down 2> "$RUNTIME_DIR/zone_gen.log" > "$zone_down_file"; } ] 
-    then
-        log_error "[Zone][$name] Error when composing network configuration for zone." 2>&1 | log_tofile "$log_file";
-        exit 1;
-    fi
+    [ ("$SHNETWORKD" ::configureNetwork "$DATA_DIR/$name" down 2> "$RUNTIME_DIR/zone_gen.log" > "$zone_down_file") ] || {
+        log_error "[Zone][$name] Error when composing network configuration for zone." 2>&1 | log_tofile "$log_file"
+        exit 1
+    }
 
     chmod +x "$zone_up_file"
     chmod +x "$zone_down_file"
