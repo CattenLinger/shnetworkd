@@ -7,6 +7,7 @@ __daemon_zone() {
     local name="$1"
     assertNotBlank s"$name" "[Zone Manager] Parameter 1(zone name) is required."
 
+    log_info "[Zone][$name] Zone manager started."
     #
     # Prepare
     #
@@ -28,8 +29,12 @@ __daemon_zone() {
     chmod +x "$manager_buffer"
     local manager_inbound="$RUNTIME_DIR/inbound"
 
+    log_info "[Zone][$name] Variables prepared."
+
     local fifos=("$manager_inbound" "$manager_bus")
     for fifo in ${fifos[@]}; do [ -p "$fifo" ] || mkfifo "$fifo"; done
+
+    log_info "[Zone][$name] inbound and bus initialized."
 
     ShutdownHook_appendAction "rm -rf '$manager_inbound' '$manager_buffer' '$manager_bus' '$pid_file' '$zone_up_file'"
 
@@ -38,7 +43,7 @@ __daemon_zone() {
     ShutdownHook_appendAction "log_info '[Zone][$name] Zone manager exited.'"
 
     echo "configuring" > "$stage_file"
-
+    log_info "[Zone][$name] Start configuring network."
     #
     # Try kill old manager
     #
@@ -58,12 +63,14 @@ __daemon_zone() {
     #
     # Generate zone_up and zone_down
     #
+    log_info "[Zone][$name] Generate zone_up."
     if [ ! $("$SHNETWORKD" ::configureNetwork "$DATA_DIR/$name" up 2> "$RUNTIME_DIR/zone_gen.log" > "$zone_up_file") ]
     then
         log_error "[Zone][$name] Error when composing network configuration for zone." 2>&1 | log_tofile "$log_file"
         exit 1
     fi
 
+    log_info "[Zone][$name] Generate zone_down."
     if [ ! $("SHNETWORKD" ::configureNetwork "$DATA_DIR/$name" down 2> "$RUNTIME_DIR/zone_gen.log" > "$zone_down_file") ]
     then
         log_error "[Zone][$name] Error when composing network configuration for zone." 2>&1 | log_tofile "$log_file"
