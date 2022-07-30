@@ -13,7 +13,7 @@ __daemon_busWatchDog() {
         [ b'true' != b"$(pid_alive $_pid)" ] && return 0
         log_info "[Bus Watchdog] stoppting instance [$_pid]($busLocation)"
         kill -s SIGINT $_pid
-        return 0
+        exit 0
     fi
 
     if [ ! -p "$busLocation" ]
