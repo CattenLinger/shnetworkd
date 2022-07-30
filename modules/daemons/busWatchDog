@@ -82,16 +82,16 @@ __private_busWatchDog_mainLoop() {
 }
 
 __daemon_busWatchDog() {
-    local busLocation="$1"
-    assertNotBlank s"$busLocation" "[Bus Watchdog] Parameter 1(bus_location) required."
-
     require sha256sum
 
     use RuntimeDir "$SHNETWORKD_RUN_DIR"
 
-    if [ s'stop' == s"$2" ]; then
-        __private_busWatchDog_stop "$busLocation"
-    else
-        __private_busWatchDog_mainLoop
-    fi
+    case "$2" in
+        'stop')
+            __private_busWatchDog_stop ${@}
+        ;;
+        *)
+            __private_busWatchDog_mainLoop ${@}
+        ;;
+    esac
 }
