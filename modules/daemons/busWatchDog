@@ -45,7 +45,10 @@ __private_busWatchDog_mainLoop() {
 
     log_info "[Bus Watchdog] Listening on '$busLocation'."
     
-    while true
+    ShutdownHook_appendAction "__BUS_WATCH_DOG_RUN='false'"
+    __BUS_WATCH_DOG_RUN="true"
+
+    while [ b'true' = b"$__BUS_WATCH_DOG_RUN" ]
     do
         cat "$busLocation" > "$temp_file"
         local received="$(cat "$temp_file" | sed 's/[[:blank:]]//g')"
@@ -88,10 +91,10 @@ __daemon_busWatchDog() {
 
     case "$2" in
         'stop')
-            __private_busWatchDog_stop ${@}
+            __private_busWatchDog_stop ${@} 2>&1 | tee -a "$SHNETWORKD_RUN_DIR/log"
         ;;
         *)
-            __private_busWatchDog_mainLoop ${@}
+            __private_busWatchDog_mainLoop ${@} 2>&1 | tee -a "$SHNETWORKD_RUN_DIR/log"
         ;;
     esac
 }
