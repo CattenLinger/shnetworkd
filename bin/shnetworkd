@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -ex
+set -e
 
 COMMAND_PATH="$(realpath $0)"
 
