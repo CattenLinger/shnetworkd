@@ -97,7 +97,7 @@ _main_target() {
         '--daemon')
             use RuntimeDir "$SHNETWORKD_RUN_DIR"
             touch "$RUNTIME_DIR/log"
-            "$SHNETWORKD ::mainDispatcher ${@[@]}" 2>&1 | tee -a "$RUNTIME_DIR/log"
+            "$SHNETWORKD ::mainDispatcher ${@}" 2>&1 | tee -a "$RUNTIME_DIR/log"
         ;;
 
         *)
@@ -122,9 +122,9 @@ _main() {
 
     if [ s'::' == s"${target:0:2}" ]
     then
-        _main_daemon ${@[@]}
+        _main_daemon ${@}
     else
-        _main_target ${@[@]}
+        _main_target ${@}
     fi
 }
 
