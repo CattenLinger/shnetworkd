@@ -1,0 +1,57 @@
+#!/bin/sh
+
+#
+# Configurator
+#
+
+if [ 0 -eq $(declare -F 'NetworkConfigurator__init' | wc -l) ] && { [ $__name__ == '_' ]; }
+then
+
+NetworkConfigurator__init() {
+    local configFile="$1"
+    assertNotBlank s"$configFile" "[NetworkConfigurator::init] Parameter 1(config_file) is required."
+
+    [ b'true' == b"$USE_NetworkConfgurator" ] && return 0
+
+    assertTrue b$(used Module) "[NetworkConfigurator::init] Require module import functionalities."
+    assertTrue b$(used RuntimeDir) "[NetworkConfigurator::init] Require runtime directory be ready."
+
+    USE_NetworkConfgurator="true"
+}
+
+fi
+
+if [ $__name__ == 'dsl' ]
+then
+    assertNotBlank s"$DSL_MODULES" "[DSL] DSL_MODULES not set."
+
+    __() {
+        local sectionName="$1"
+        assertNotBlank s"$sectionName" "[Section] section name required."
+        
+        __name__="_"
+        . "$DSL_MODULES/dsl/$sectionName"
+        unset __name__
+        __DSL_CONTEXT="$sectionName"
+        local initName="__dsl_init_$sectionName"
+        [ $(declare -F "$initName") ] && eval "$initName ${@:2}"
+    }
+
+    __requireDSLContext() {
+        local name="$1"
+        local message="$2"
+        [ -z "$message" ] && message="Invalid Context '$name'."
+        
+        if [ s"$__DSL_CONTEXT" != s"$name" ]
+        then
+            log_error "[DSL] $message"
+            exit 1
+        fi
+    }
+
+    __action() {
+        local action="$1"
+        assertNotBlank s"$action" "[::action] action should not be empty"
+        echo "$action"
+    }
+fi

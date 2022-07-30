@@ -1,0 +1,175 @@
+#
+# Lang
+#
+
+log_error() {
+    local message="$@"
+    [ '[' != "${message:0:1}" ] && message=" $message"
+    >&2 echo "[ERROR][$(current_date)]$message"
+}
+
+log_warn() {
+    local message="$@"
+    [ '[' != "${message:0:1}" ] && message=" $message"
+    >&2 echo "[WARN ][$(current_date)]$message"
+}
+
+log_info() {
+    local message="$@"
+    [ '[' != "${message:0:1}" ] && message=" $message"
+    >&2 echo "[INFO ][$(current_date)]$message"
+}
+
+log_tofile() {
+    local file="$1"
+    if [ -z "$file" ] || { [ ! -f "$file" ]; }
+    then
+        cat 1>&2
+        return 0
+    fi
+    cat 2>&1 tee -a "$file" 1>&2
+}
+
+import() {
+    local name="$1"
+    local from="$3"
+
+    if [ s'from' != s"$2" ]
+    then
+        log_error "[import] Usage: import <name> from <file>"
+        exit 1
+    fi
+
+    assertNotBlank s"$name" "[import] Parameter 1(name) required."
+    assertNotBlank s"$from" "[import] Parameter 3(file) required."
+
+    local import_key="____dic_reg_imported_$name"
+    [ b'true' == b"$(echo ""\$$import_key"")" ] && return 0
+    __name__="$name"
+    . "$from"
+    unset __name__
+    eval "declare $import_key='true'"
+}
+
+use() {
+    local name="$1"
+    assertNotBlank s"$name" "[use] Parameter 1(name) required."
+
+    local entryName="${name}__init"
+    if [ ! $(declare -F "$entryName") ]
+    then
+        log_error "[use] Could not find entry for '$name'"
+        exit 1
+    fi
+    local useKey="____dic_reg_used_$name"
+    [ b'true' == b"$(used $name)" ] && return 0
+    eval "$entryName ${@:2} && $useKey='true'"
+}
+
+used() {
+    local name="$1"
+    assertNotBlank s"$name" "[use] Parameter 1(name) required."
+
+    local useKey="__used_$name"
+    eval 'echo $'"$useKey"
+}
+
+require() {
+    local cmd="$1"
+    if [ -z $(command -v "$cmd" 2> /dev/null) ]
+    then
+        log_error "Command '$cmd' is required."
+        exit 1
+    fi
+}
+
+assert() {
+    local boolean="$1"
+    if [ b'true' != b"$boolean" ]
+    then
+        log_error "$boolean"
+        exit 1
+    fi
+}
+
+assertTrue() {
+    local boolean="$1"
+    local message="$2"
+    [ -z "$message" ] && message="assertTrue: expected 'true' but got '${boolean:1}'."
+
+    if [ b'true' != $boolean ]
+    then
+        log_error "$message"
+        exit 1
+    fi
+}
+
+assertFalse() {
+    local boolean="$1"
+    local message="$2"
+    [ -z "$message" ] && message="assertFalse expected not 'true' but got '${boolean:1}'."
+    if [ b'true' == "$boolean" ]
+    then
+        log_error "$message"
+        exit 1
+    fi
+}
+
+assertNotBlank() {
+    local string="$1"
+    local message="$2"
+    [ -z "$message" ] && message="String not blank required."
+    if [ -z $(echo "${string:1}" | sed 's/[[:blank:]]//g') ]
+    then
+        log_error "$message"
+        exit 1
+    fi
+}
+
+isBlank() {
+    local string="$1"
+    [ -z "$string" ] && return 0
+    return 1
+}
+
+#
+# Utils
+#
+
+require date
+
+current_date() {
+    date +%y/%m/%d\ %H:%M:%S
+}
+
+require ps
+
+pid_alive() {
+    local id="$1"
+    assert $([ -z "$id" ] || echo "true") "pid_alive: Parameter 1(id) is required."
+    ps -p "$id" -o pid 2>&1 > /dev/null && echo "true"
+}
+
+#
+# Bus
+#
+
+wait_event() {
+    local key="$1"
+    local bus="$2"
+    assertNotBlank s"$key" "[wait_event] Parameter 1(message_key) should not be blank"
+    assertNotBlank s"$bus" "[wait_event] Parameter 2(bus) should not be blank"
+
+    if [ ! -p "$bus" ]
+    then
+        log_error "[wait_event] '$bus' not exists."
+        exit 1
+    fi
+
+    while true
+    do
+        local message="$(cat "$bus")"
+        [ s"$key" == s"$message" ] && break
+        echo "$message" > "$bus"
+    done
+}

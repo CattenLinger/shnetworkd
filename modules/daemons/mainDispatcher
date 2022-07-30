@@ -1,0 +1,42 @@
+#
+# Main cli dispatcher
+#
+
+__daemon_mainDispatcher() {
+    require mkfifo
+
+    use RuntimeDir "$SHNETWORKD_RUN_DIR"
+    use ShutdownHook "shnetworkd"
+    
+    local message_bus="$RUNTIME_DIR/bus"
+    ShutdownHook_appendAction "$SHNETWORKD ::busWatchDog ""$message_bus"" stop"
+
+    local inbound_file="$RUNTIME_DIR/inbound"
+    ShutdownHook_appendAction "rm -rf $inbound_file"
+
+    local pid_file="$RUNTIME_DIR/shnetworkd.pid"
+    ShutdownHook_appendAction "rm -rf $pid_file"
+
+    local buffer_file="$RUNTIME_DIR/.shnetworkd.buffer"
+    chmod +x "$buffer_file"
+    ShutdownHook_appendAction "rm -rf $buffer_file"
+
+    local log_file="$RUNTIME_DIR/log"
+    echo "================ shnetworkd dispatcher start at $(date +%m/%d/%y\ %H:%M:%S) ================" >> $log_file
+    
+    local fifos=($inbound_file $message_bus)
+    for fifo in ${fifos[@]}; do [ -p "$fifo" ] || mkfifo $fifo; done
+
+    eval "$SHNETWORKD ::busWatchDog $message_bus 2>&1" | tee -a "$log_file" &
+    log_info "Start bus watchdog." | log_tofile "$log_file"
+
+    while true
+    do
+        log_info "[shnetworkd] Waiting for message."
+        cat "$inbound_file" > "$buffer_file"
+        [ i'0' == "$(cat "$buffer_file" | sed 's/[[:blank:]]//g' | wc -l)" ] && continue
+        . "$buffer_file"
+    done
+
+    exit 0
+}

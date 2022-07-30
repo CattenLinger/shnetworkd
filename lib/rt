@@ -1,0 +1,99 @@
+#
+# RunDir
+#
+
+RuntimeDir__init() {
+    RUNTIME_DIR="$1"
+    assertNotBlank s"$RUNTIME_DIR" "[RuntimeDir::init] Parameter 1(RUNTIME_DIR) is required."
+
+    [ -d "$RUNTIME_DIR" ] || mkdir -p "$RUNTIME_DIR"
+
+    RuntimeDir_destroy() {
+        rm -rf "$RUNTIME_DIR"
+    }
+}
+
+#
+# Data
+#
+
+DataDir__init() {
+    DATA_DIR="$1"
+    assertNotBlank s"$DATA_DIR" "[DataDir::init] Parameter 1(DATA_DIR) is required."
+
+    DATA_DIR="$(realpath "$DATA_DIR")"
+    if [ ! -d "$DATA_DIR" ]
+    then
+        if [ b'true' == b"$SHNETWORKD_PREVENT_AUTO_CREATE" ]
+        then
+            log_error "[DataDir::init] Data directory '$DATA_DIR' does not exists. (Auto-create disable by \$SHNETWORKD_PREVENT_AUTO_CREATE)"
+            exit 1
+        fi
+        log_info "[DataDir::init] Will create data directory '$DATA_DIR'."
+        mkdir -p "$DATA_DIR"
+        log_info "[DataDir::init] Data directory '$DATA_DIR' created."
+    fi
+}
+
+#
+# Module
+#
+
+Module__init() {
+    MODULE_PATH="$1"
+    assertNotBlank s"$MODULE_PATH" "[Module::init] Parameter 1(MODULE_PATH) is required."
+
+    [ b'true' == b"$USE_Module" ] && return 0
+
+    [ -d "$MODULE_PATH" ] || mkdir -p "$MODULE_PATH"
+
+    USE_Module="true"
+
+    module() {
+        local _name="$1"
+        assertNotBlank s"$_name" "[Module::load] Parameter 1(name) is required."
+
+        local _result=$(find "$MODULE_PATH" -mindepth 1 -maxdepth 1 -name "$_name" 2> /dev/null | wc -l)
+        if [ "0" == "$_result" ]
+        then
+            log_error "[Module::load] module with name '$_name' not found."
+            exit 1
+        fi
+
+        . "$MODULE_PATH/$_name"
+    }
+}
+
+#
+# Shutdown Hook
+#
+
+ShutdownHook__init() {
+    local file="$1"
+    [ -z "$file" ] && file="_"
+
+    assert $USE_RuntimeDir "Could not use ShutdownHook: RuntimeDir must be initialized."
+
+    _ShutdownHook_onShutdownRun="$RUNTIME_DIR/$name.shutdownhook"
+    if [ ! -f "$_ShutdownHook_onShutdownRun" ]
+    then
+        echo -e '#!/bin/bash\nset -e\n' > "$_ShutdownHook_onShutdownRun"
+        chmod +x "$_ShutdownHook_onShutdownRun"
+    fi
+
+    ShutdownHook_appendAction() {
+        local command="$1"
+        echo "$command" >> "$_ShutdownHook_onShutdownRun"
+    }
+
+    _ShutdownHook_triggered="false"
+    ShutdownHook_doShutdown() {
+        [ b'true' == b"$_ShutdownHook_triggered" ] && return 0
+        _ShutdownHook_triggered="true"
+        log_info "[ShutdownHook::doShutdown] Executing shutdown actions."
+        . "$_ShutdownHook_onShutdownRun"
+        exit 0
+    }
+
+    trap ShutdownHook::doShutdown SIGINT SIGTERM SIGKILL EXIT
+}

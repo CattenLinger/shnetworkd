@@ -1,0 +1,80 @@
+
+#
+# The bridge dsl
+#
+
+require awk
+require wc
+require ip
+
+if [ $__name__ == '_' ]
+then
+
+__dsl_init_bridge() {
+    local bridgeName="$1"
+    assertNotBlank s"$bridgeName" "[DSL::Bridge] Prameter 1(bridge name) required."
+
+    __DSL_CONTEXT='bridge'
+    __DSL_CONTEXT_V_BRIDGE_NAME="$bridgeName"
+
+    if [ s"$SCRIPT_MODE" == s"down" ]
+    then
+        cat <<< "
+        ip link set $__DSL_CONTEXT_V_BRIDGE_NAME down
+        ip link del $__DSL_CONTEXT_V_BRIDGE_NAME
+        "
+        return 0
+    else
+        cat <<< "
+        if [ i'0' == i""\$(ip -o link | awk '/^\d+?\s?$bridgeName/' | wc -l)"" ]
+        then
+            ip link add $__DSL_CONTEXT_V_BRIDGE_NAME type bridge
+            ip link set $__DSL_CONTEXT_V_BRIDGE_NAME up 
+        fi
+        instance_location='$SHNETWORKD_RUN_DIR/bridges/$bridgeName'
+        [ -d \"\$instance_location\" ] || mkdir -p \"\$instance_location\"
+        echo 'bridge' > \"\$instance_location/instance_type\"
+        unset instance_location
+        "
+    fi     
+}
+
+stp() {
+    __requireDSLContext "bridge"
+    [ s"$SCRIPT_MODE" == s"down" ] && return 0
+
+    local enable="$1"
+    case "$enable" in
+        'yes'|'enable'|'true')
+            enable="1"
+        ;;
+        'no'|'disable'|'false')
+            enable="0"
+        ;;
+        *)
+            log_error "[DSL::Bridge::stp] unknown stp setting: $enable"
+            exit 1
+        ;;
+    esac
+    cat <<< "
+    ip link set ""$__DSL_CONTEXT_V_BRIDGE_NAME"" type bridge stp_state $enable
+    "
+}
+
+slaves() {
+    __requireDSLContext "bridge"
+    [ s"$SCRIPT_MODE" == s"down" ] && return 0
+
+    local args=("$@")
+    [ -z "$args" ] && assertTrue b'false' "[DSL:Bridge::slaves] require 1 or more parameters."
+    for interface in ${args[@]}
+    do
+        cat <<< "
+        ip address flush dev ""$interface""
+        ip link set ""$interface"" master ""$__DSL_CONTEXT_V_BRIDGE_NAME""
+        "
+    done
+}
+
+
+fi

@@ -1,0 +1,78 @@
+#
+# Bus watchdog
+#
+__daemon_busWatchDog() {
+    local busLocation="$1"
+
+    assertNotBlank s"$busLocation" "[Bus Watchdog] Parameter 1(bus_location) required."
+
+    require sha256sum
+
+    if [ ! -p "$busLocation" ]
+    then
+        log_error "[Bus Watchdog] Bus '$busLocation' does not exists."
+        exit 1
+    fi
+
+    use RuntimeDir "$(dirname $busLocation)"
+    use ShutdownHook "bus_watchdog"
+
+    local pid_file="$RUNTIME_DIR/bus_watchdog.pid"
+    ShutdownHook_appendAction "rm -rf ""$pid_file"
+
+    if [ s'stop' == s"$2" ]; then 
+        local _pid=$(cat "$pid_file")
+        [ b'true' != b"$(pid_alive $_pid)" ] && return 0
+        log_info "[Bus Watchdog] stoppting instance [$_pid]($busLocation)"
+        kill -s SIGINT $_pid
+        return 0
+    fi
+
+    local table_file="$RUNTIME_DIR/bus_watchdog.ttl.table"
+    ShutdownHook_appendAction "rm -rf ""$table_file"
+
+    local temp_file="$RUNTIME_DIR/.bus_watchdog.buffer"
+    ShutdownHook_appendAction "rm -rf ""$temp_file"
+
+    [ -z "$SHNETWORKD_WATCHDOG_MESSAGE_TTL" ] && SHNETWORKD_WATCHDOG_MESSAGE_TTL=1
+    local message_ttl="$SHNETWORKD_WATCHDOG_MESSAGE_TTL"
+
+    echo "$$" > "$pid_file"
+
+    log_info "[Bus Watchdog] Listening on '$busLocation'."
+    
+    while true
+    do
+        cat "$busLocation" > "$temp_file"
+        local received="$(cat "$temp_file" | sed 's/[[:blank:]]//g')"
+        [ -z "$received" ] && continue
+
+        received="$(echo "$received" | sha256sum -z | sed 's/ -//g')"
+        local found='false'
+        
+        _IFS=$IFS
+        IFS=$'\n'
+        for entry in $(cat "$table_file")
+        do
+            local contents
+            IFS=',' read -r -a contents <<< "$entry"
+            local id="${contents[0]}"
+            local ttl="${contents[1]}"
+            ttl=$((ttl - 1))
+
+            log_info "[Bus Watchdog] Message id '$id', TTL $ttl."
+            
+            sed "s/$entry/$id,$ttl/g"
+
+            [ s"$content" == s"$received" ] && found='true'
+        done
+        IFS=$_IFS
+
+        [ b'true' != b"$found" ] && echo "$received,$message_ttl" >> $table_file
+
+        cat $table_file | awk -F',' '{ if !($2=="0") print $0 }' > $table_file
+        log_info "[Bus Watchdog] clean up ttl table."
+    done
+
+    exit 0
+}

@@ -1,0 +1,17 @@
+#
+# Network configurator entry
+#
+
+__daemon_configureNetwork() {
+    local file="$1"
+    assertNotBlank s"$file" "[Configure Network] Parameter 1(zone config file) is required."
+
+    [ -f "$file" ] || assertTrue b'false' "[Configure Network] Configuration file '$file' not found."
+
+    DSL_MODULES="$SHNETWORKD_HOME/modules"
+    import dsl from "$SHNETWORKD_HOME/modules/NetworkConfigurator"
+    SCRIPT_MODE="$2"
+    . "$file"
+
+    exit 0
+}

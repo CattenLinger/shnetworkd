@@ -1,0 +1,82 @@
+#
+# Zone manager daemon
+#
+
+__daemon_zone() {
+    local name="$1"
+    assertNotBlank s"$name" "[Zone Manager] Parameter 1(zone name) is required."
+
+    use RuntimeDir "$SHNETWORKD_RUN_DIR/zones/$name"
+    use DataDir "$SHNETWORKD_HOME/config"
+    use ShutdownHook
+
+    local log_file="$RUNTIME_DIR/log"
+
+    local zone_up_file="$RUNTIME_DIR/zone_up"
+    local zone_down_file="$RUNTIME_DIR/zone_down"
+
+    local manager_inbound="$RUNTIME_DIR/inbound"
+    local pid_file="$RUNTIME_DIR/pid"
+    local manager_bus="$RUNTIME_DIR/bus"
+    local manager_buffer="$RUNTIME_DIR/.zone.buffer"
+    chmod +x "$manager_buffer"
+    local manager_inbound="$RUNTIME_DIR/inbound"
+
+    local fifos=("$manager_inbound" "$manager_bus")
+    for fifo in ${fifos[@]}; do [ -p "$fifo" ] || mkfifo "$fifo"; done
+
+    ShutdownHook_appendAction "rm -rf '$manager_inbound' '$manager_buffer' '$manager_bus' '$pid_file' '$zone_up_file'"
+
+    local stage_file="$RUNTIME_DIR/stage"
+    ShutdownHook_appendAction "echo 'dead' > '$stage_file'"
+
+    echo "configuring" > "$stage_file"
+    if [ -f "$manager_pid" ]
+    then
+        local manager_pid=$(cat "$manager_pid_file")
+        if [ b'true' == $(pid_alive "$manager_pid") ]
+        then
+            log_info "[Zone][$name] Manager is alive. Notify manager to stop."
+            local callback_key="zone::manager::shutdown::$(date +%y%m%d%H%M%S)::$$"
+            echo "echo '$callbackkey' > '$SHNETWORKD_RUN_DIR/bus'" >> "$manager_shutdownhook"
+            kill -s SIGINT "$manager_pid"
+            wait_event "$callback_key" "$manager_bus"
+        fi
+    fi
+
+    if [ ! $("$SHNETWORKD" ::configureNetwork "$DATA_DIR/$name" up > "$zone_up_file") ]
+    then
+        log_error "[Zone][$name] Error when composing network configuration for zone." 2>&1 | log_tofile "$log_file"
+        exit 1
+    fi
+
+    if [ ! $("SHNETWORKD" ::configureNetwork "$DATA_DIR/$name" down > "$zone_down_file") ]
+    then
+        log_error "[Zone][$name] Error when composing network configuration for zone." 2>&1 | log_tofile "$log_file"
+        exit 1
+    fi
+
+    chmod +x "$zone_up_file"
+    chmod +x "$zone_down_file"
+
+    ShutdownHook_appendAction "$zone_down_file"
+
+    chmod +x "$zone_up_file"
+    if [ ! $("$zone_up_file" 2>&1 | log_tofile "$log_file") ]
+    then
+        log_error "[Zone][$name] Error while activating zone." 2>&1 | log_tofile "$log_file"
+        exit 1
+    fi
+    
+    echo "up" > "$stage_file"
+
+    BUS="$manager_bus"
+    while true
+    do
+        log_info "[Zone Manager] Waiting for script."
+        cat "$manager_inbound" > "$manager_buffer"
+        [ i'0' == $(cat "$manager_buffer" | sed 's/[[:blank:]]//g' | wc -l) ] && continue
+        log_info "[Zone Manager] Script received."
+        . "$manager_buffer"
+    done
+}

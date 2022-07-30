@@ -1,0 +1,50 @@
+__ bridge br-lan
+   stp     enable
+   members enp1s0 enp2s0 enp3s0 enp4s0
+
+__ wireless client wlp3s0
+connect_to AP_Name
+password   123456
+
+__ wireless ap wlp2s0
+ssid        AP_Name
+password    123456
+encryptioin WPA2-PSK
+
+__ tinc shinonome-guest
+connect_to    Host_Name
+public_key    /path/to/public_key/file
+private_key   /path/to/private_key/file
+hosts         /path/to/hosts
+
+address_family ipv4
+mode           switch
+proxy          socks5 127.0.0.1 1080
+port           114
+
+__ tinc shinonome-cluster
+public_key  /path/to/public_key/file
+private_key /path/to/private_key/file
+hosts       /path/to/hosts
+mode        switch
+proxy       socks5 127.0.0.1 1080
+port        514
+
+__ dhcp client ipv4
+interface       br-lan
+
+__ dhcp client ipv6
+interface       br-lan
+
+__ dhcp server ipv4
+interface    br-vpn
+subnet       10.255.0.0/24
+range        10.255.0.100 10.255.255.254
+leases_file  $DATA_DIR/dhcp/dhcpd.leases
+name_servers 1.1.1.1 8.8.8.8
+
+fixed_leases client_name Z420 address 10.255.0.20
+
+__ firewall filter
+
+__ firewall nat

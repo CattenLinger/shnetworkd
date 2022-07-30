@@ -1,0 +1,76 @@
+
+#
+# NetworkZone
+#
+
+if [ 0 -eq $(declare -F 'NetworkZoneManager::init' | wc -l) ]
+then
+
+NetworkZoneManager::init() {
+    ZONE_NAME="$1"
+    assertNotBlank s"$ZONE_NAME" "[NetworkZoneManager::init] Parameter 1(zone_name) is required."
+
+    [ b'true' == b"$USE_NetworkZoneManager" ] && return 0
+
+    require declare
+
+    assertFalse $USE_NetworkZone "[NetworkZoneManager::init] Conflict with NetworkZone."
+
+    assert $USE_Data "[NetworkZoneManager::init] Require data directory be ready."
+    assert $USE_Module "[NetworkZoneManager::init] Require module import functionalities."
+    assert $USE_RuntimeDir "[NetworkZoneManager::init] Require runtime directory be ready."
+    assert $USE_ShutdownHook "[NetworkZoneManager::init] Require ShutdownHook be set." 
+
+    USE_NetworkZoneManager="true"
+
+    _NetworkZoneManager_inbound="$RUNTIME_DIR/inbound"
+    _NetworkZoneManager_outbound="$RUNTIME_DIR/outbound"
+    _NetworkZoneManager_log="$RUNTIME_DIR/log"
+    _NetworkZoneManager_data="$DATA_DIR"
+
+    mkfifo "$_NetworkZoneManager_inbound"
+    mkfifo "$_NetworkZoneManager_outbound"
+    ShutdownHook_appendAction "RuntimeDir::destory"
+
+    _NetworkZoneManager_functionTable="$RUNTIME_DIR/.function_table"
+
+    _NetworkZoneManager::initNetwork() {
+        if [ ! -f "$_NetworkZoneManager_data" ]
+        then
+            log_error "[_NetworkZoneManager::initWorkspace] Zone file '$_NetworkZoneManager_data' not exists."
+            exit 1
+        fi
+
+        . "$_NetworkZoneManager_data"
+
+        declare -F 2> /dev/null | awk '/^declare -F :?(.+?:)*?(.+?)?$/ { print $3 }' 2> /dev/null > "$_NetworkZoneManager_functionTable"
+    }
+
+    NetworkZoneManager_functionInTable() {
+        local name="$1"
+        assertNotBlank s"$name" "NetworkZoneManager_functionInTable: Parameter 1(name) is required."
+        [ i'0' != $(cat "$_NetworkZoneManager_functionTable" | grep "$name" | wc -l) ] && echo "true"
+    }
+
+    NetworkZoneManager_configureNetwork() {
+        if [ b'true' != b"$(NetworkZoneManager_functionInTable :init)"]
+        then
+            return 0
+        fi
+    }
+
+    NetworkZoneManager_loop() {
+        
+    }
+
+    NetworkZoneManager_main() {
+        if [ 'i0' == $(cat "$_NetworkZoneManager_functionTable" | wc -l) ]
+        then
+            log_info "No network configuration."
+        else
+            NetworkZone_configureNetwork
+        fi
+    }
+}
+
+fi
