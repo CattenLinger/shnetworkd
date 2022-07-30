@@ -3,20 +3,22 @@
 #
 set -e
 
-__daemon_busWatchDog() {
+__private_busWatchDog_stop() {
     local busLocation="$1"
-
     assertNotBlank s"$busLocation" "[Bus Watchdog] Parameter 1(bus_location) required."
 
-    require sha256sum
+    local pid_file="$RUNTIME_DIR/bus_watchdog.pid"
 
-    if [ s'stop' == s"$2" ]; then 
-        local _pid=$(cat "$pid_file")
-        [ b'true' != b"$(pid_alive $_pid)" ] && return 0
-        log_info "[Bus Watchdog] stoppting instance [$_pid]($busLocation)"
-        kill -s SIGINT $_pid
-        exit 0
-    fi
+    local _pid=$(cat "$pid_file")
+    [ b'true' != b"$(pid_alive $_pid)" ] && return 0
+    log_info "[Bus Watchdog] stoppting instance [$_pid]($busLocation)"
+    kill -s SIGINT $_pid
+    exit 0
+}
+
+__private_busWatchDog_mainLoop() {
+    local busLocation="$1"
+    assertNotBlank s"$busLocation" "[Bus Watchdog] Parameter 1(bus_location) required."
 
     if [ ! -p "$busLocation" ]
     then
@@ -29,8 +31,6 @@ __daemon_busWatchDog() {
 
     local pid_file="$RUNTIME_DIR/bus_watchdog.pid"
     ShutdownHook_appendAction "rm -rf ""$pid_file"
-
-    
 
     local table_file="$RUNTIME_DIR/bus_watchdog.ttl.table"
     ShutdownHook_appendAction "rm -rf ""$table_file"
@@ -79,4 +79,19 @@ __daemon_busWatchDog() {
     done
 
     exit 0
+}
+
+__daemon_busWatchDog() {
+    local busLocation="$1"
+    assertNotBlank s"$busLocation" "[Bus Watchdog] Parameter 1(bus_location) required."
+
+    require sha256sum
+
+    use RuntimeDir "$SHNETWORKD_RUN_DIR"
+
+    if [s'stop' == s"$2" ]; then
+        __private_busWatchDog_stop "$busLocation"
+    else
+        __private_busWatchDog_mainLoop
+    fi
 }
