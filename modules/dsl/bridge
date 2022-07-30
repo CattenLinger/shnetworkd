@@ -26,7 +26,7 @@ __dsl_init_bridge() {
         return 0
     else
         cat <<< "
-        if [ i'0' == i""\$(ip -o link | awk '/^\d+?\s?$bridgeName/' | wc -l)"" ]
+        if [ i'0' == i""\$(ip -o link | awk '/^[0-9]+?\s?$bridgeName/' | wc -l)"" ]
         then
             ip link add $__DSL_CONTEXT_V_BRIDGE_NAME type bridge
             ip link set $__DSL_CONTEXT_V_BRIDGE_NAME up 
