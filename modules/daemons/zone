@@ -35,6 +35,7 @@ __daemon_zone() {
 
     local stage_file="$RUNTIME_DIR/stage"
     ShutdownHook_appendAction "echo 'dead' > '$stage_file'"
+    ShutdownHook_appendAction "log_info '[Zone][$name] Zone manager exited.'"
 
     echo "configuring" > "$stage_file"
 
