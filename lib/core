@@ -42,7 +42,7 @@ require() {
 require awk
 require sha256sum
 sha256() {
-    sha256sum | awk '{ print $0 }'
+    sha256sum | awk -F' ' '{ print $0 }'
 }
 
 import() {
