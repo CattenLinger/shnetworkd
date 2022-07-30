@@ -39,9 +39,10 @@ require() {
     fi
 }
 
+require sed
 require sha256sum
 sha256() {
-    sha256sum | sed 's/ -//g'
+    sha256sum | sed 's/[[:blank::]]-//g'
 }
 
 import() {
