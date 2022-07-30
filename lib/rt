@@ -95,5 +95,5 @@ ShutdownHook__init() {
         exit 0
     }
 
-    trap ShutdownHook::doShutdown SIGINT SIGTERM SIGKILL EXIT
+    trap ShutdownHook_doShutdown SIGINT SIGTERM SIGKILL EXIT
 }
