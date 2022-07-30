@@ -58,19 +58,20 @@ use() {
     local entryName="${name}__init"
     if [ ! $(declare -F "$entryName") ]
     then
-        log_error "[use] Could not find entry for '$name'"
+        log_error "[use] Could not find init entry for '$name'"
         exit 1
     fi
     local useKey="____dic_reg_used_$name"
     [ b'true' == b"$(used $name)" ] && return 0
-    eval "$entryName ${@:2} && $useKey='true'"
+    "$entryName" ${@:2}
+    eval "$useKey='true'"
 }
 
 used() {
     local name="$1"
     assertNotBlank s"$name" "[use] Parameter 1(name) required."
 
-    local useKey="__used_$name"
+    local useKey="__dic_reg_used_$name"
     eval 'echo $'"$useKey"
 }
 

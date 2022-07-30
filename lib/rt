@@ -72,7 +72,7 @@ ShutdownHook__init() {
     local file="$1"
     [ -z "$file" ] && file="_"
 
-    assert $USE_RuntimeDir "Could not use ShutdownHook: RuntimeDir must be initialized."
+    assertTrue b"$(used RuntimeDir)" "Could not use ShutdownHook: RuntimeDir must be initialized."
 
     _ShutdownHook_onShutdownRun="$RUNTIME_DIR/$name.shutdownhook"
     if [ ! -f "$_ShutdownHook_onShutdownRun" ]
