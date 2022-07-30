@@ -88,12 +88,13 @@ ShutdownHook__init() {
 
     _ShutdownHook_triggered="false"
     ShutdownHook_doShutdown() {
-        [ b'true' == b"$_ShutdownHook_triggered" ] && return 0
-        _ShutdownHook_triggered="true"
-        log_info "[ShutdownHook::doShutdown] Executing shutdown actions."
-        . "$_ShutdownHook_onShutdownRun"
-        kill -s KILL "$$"
-        exit 0
+        if [ b'true' != b"$_ShutdownHook_triggered" ]
+        then
+            _ShutdownHook_triggered="true"
+            log_info "[ShutdownHook::doShutdown] Executing shutdown actions."
+            . "$_ShutdownHook_onShutdownRun"
+            exit 0
+        fi
     }
 
     trap ShutdownHook_doShutdown SIGINT SIGTERM SIGKILL EXIT
