@@ -4,7 +4,12 @@
 
 set -e
 
-__private_mainDispatcher_prepare() {
+__daemon_mainDispatcher() {
+    require mkfifo
+
+    #
+    # Prepare
+    #
     use RuntimeDir "$SHNETWORKD_RUN_DIR"
     use ShutdownHook "shnetworkd"
     
@@ -27,13 +32,10 @@ __private_mainDispatcher_prepare() {
     
     local fifos=("$inbound_file" "$message_bus")
     for fifo in ${fifos[@]}; do [ -p "$fifo" ] || mkfifo "$fifo"; done
-}
 
-__daemon_mainDispatcher() {
-    require mkfifo
-
-    __private_mainDispatcher_prepare
-
+    #
+    # Start watch dog
+    # 
     eval "$SHNETWORKD ::busWatchDog $message_bus 2>&1" | tee -a "$log_file" &
     log_info "Start bus watchdog." | log_tofile "$log_file"
 
