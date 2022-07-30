@@ -30,7 +30,23 @@ log_tofile() {
     cat 2>&1 tee -a "$file" 1>&2
 }
 
+require() {
+    local cmd="$1"
+    if [ -z $(command -v "$cmd" 2> /dev/null) ]
+    then
+        log_error "Command '$cmd' is required."
+        exit 1
+    fi
+}
+
+require sha256sum
+sha256() {
+    sha256sum | sed 's/ -//g'
+}
+
 import() {
+    require base64
+
     local name="$1"
     local from="$3"
 
@@ -43,7 +59,7 @@ import() {
     assertNotBlank s"$name" "[import] Parameter 1(name) required."
     assertNotBlank s"$from" "[import] Parameter 3(file) required."
 
-    local import_key="____dic_reg_imported_$name"
+    local import_key="____dic_reg_imported_$(echo "$name_$from" | sha256)"
     [ b'true' == b"$(echo ""\$$import_key"")" ] && return 0
     __name__="$name"
     . "$from"
@@ -73,15 +89,6 @@ used() {
 
     local useKey="__dic_reg_used_$name"
     eval 'echo $'"$useKey"
-}
-
-require() {
-    local cmd="$1"
-    if [ -z $(command -v "$cmd" 2> /dev/null) ]
-    then
-        log_error "Command '$cmd' is required."
-        exit 1
-    fi
 }
 
 assert() {
