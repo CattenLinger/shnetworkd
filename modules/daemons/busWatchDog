@@ -13,7 +13,7 @@ __private_busWatchDog_stop() {
     local _pid=$(cat "$pid_file")
     [ b'true' != b"$(pid_alive $_pid)" ] && return 0
     log_info "[Bus Watchdog] stoppting instance [$_pid]($busLocation)"
-    kill -s SIGINT $_pid
+    kill -s TERM $_pid
     exit 0
 }
 
