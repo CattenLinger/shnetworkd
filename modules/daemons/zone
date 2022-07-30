@@ -1,11 +1,15 @@
 #
 # Zone manager daemon
 #
+set -e
 
 __daemon_zone() {
     local name="$1"
     assertNotBlank s"$name" "[Zone Manager] Parameter 1(zone name) is required."
 
+    #
+    # Prepare
+    #
     use RuntimeDir "$SHNETWORKD_RUN_DIR/zones/$name"
     use DataDir "$SHNETWORKD_HOME/config"
     use ShutdownHook
@@ -31,6 +35,10 @@ __daemon_zone() {
     ShutdownHook_appendAction "echo 'dead' > '$stage_file'"
 
     echo "configuring" > "$stage_file"
+
+    #
+    # Try kill old manager
+    #
     if [ -f "$manager_pid" ]
     then
         local manager_pid=$(cat "$manager_pid_file")
@@ -44,6 +52,9 @@ __daemon_zone() {
         fi
     fi
 
+    #
+    # Generate zone_up and zone_down
+    #
     if [ ! $("$SHNETWORKD" ::configureNetwork "$DATA_DIR/$name" up > "$zone_up_file") ]
     then
         log_error "[Zone][$name] Error when composing network configuration for zone." 2>&1 | log_tofile "$log_file"
@@ -59,10 +70,14 @@ __daemon_zone() {
     chmod +x "$zone_up_file"
     chmod +x "$zone_down_file"
 
+    # Run zone_down when exit
     ShutdownHook_appendAction "$zone_down_file"
 
+    #
+    # Run zone_up
+    #
     chmod +x "$zone_up_file"
-    if [ ! $("$zone_up_file" 2>&1 | log_tofile "$log_file") ]
+    if [ ! $(RUNTIME_DIR="$RUNTIME_DIR" "$zone_up_file" 2>&1 | log_tofile "$log_file") ]
     then
         log_error "[Zone][$name] Error while activating zone." 2>&1 | log_tofile "$log_file"
         exit 1

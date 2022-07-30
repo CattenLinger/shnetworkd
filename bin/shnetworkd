@@ -81,7 +81,7 @@ _main_daemon() {
         log_error "Unknown daemon target: $targetName"
         exit 1
     fi
-    eval "$functionName $args"
+    eval "$functionName ${args[@]}"
 }
 
 _main_target() {
@@ -111,7 +111,7 @@ _main_target() {
                 _help 1>&2
                 exit 1
             fi
-            eval "$functionName $args"
+            eval "$functionName ${args[@]}"
         ;;
     esac
 }
@@ -122,9 +122,9 @@ _main() {
 
     if [ s'::' == s"${target:0:2}" ]
     then
-        _main_daemon ${@}
+        _main_daemon $@
     else
-        _main_target ${@}
+        _main_target $@
     fi
 }
 
