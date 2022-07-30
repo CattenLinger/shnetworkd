@@ -92,6 +92,7 @@ ShutdownHook__init() {
         _ShutdownHook_triggered="true"
         log_info "[ShutdownHook::doShutdown] Executing shutdown actions."
         . "$_ShutdownHook_onShutdownRun"
+        kill -s KILL "$$"
         exit 0
     }
 

@@ -23,6 +23,7 @@ __daemon_zone() {
     local pid_file="$RUNTIME_DIR/pid"
     local manager_bus="$RUNTIME_DIR/bus"
     local manager_buffer="$RUNTIME_DIR/.zone.buffer"
+    touch "$manager_buffer"
     chmod +x "$manager_buffer"
     local manager_inbound="$RUNTIME_DIR/inbound"
 
