@@ -89,7 +89,7 @@ __daemon_busWatchDog() {
 
     use RuntimeDir "$SHNETWORKD_RUN_DIR"
 
-    if [s'stop' == s"$2" ]; then
+    if [ s'stop' == s"$2" ]; then
         __private_busWatchDog_stop "$busLocation"
     else
         __private_busWatchDog_mainLoop
