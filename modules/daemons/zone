@@ -88,6 +88,7 @@ __daemon_zone() {
     #
     # Run zone_up
     #
+    log_info "[Zone][$name] Execute zone configuration."
     chmod +x "$zone_up_file"
     if [ ! $(RUNTIME_DIR="$RUNTIME_DIR" "$zone_up_file" 2>&1 | log_tofile "$log_file") ]
     then
