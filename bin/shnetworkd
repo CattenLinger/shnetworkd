@@ -97,7 +97,7 @@ _main_target() {
         '--daemon')
             use RuntimeDir "$SHNETWORKD_RUN_DIR"
             touch "$RUNTIME_DIR/log"
-            "$SHNETWORKD ::mainDispatcher ${@}" 2>&1 | tee -a "$RUNTIME_DIR/log"
+            "$SHNETWORKD" "::mainDispatcher" ${@} 2>&1 | tee -a "$RUNTIME_DIR/log"
         ;;
 
         *)
