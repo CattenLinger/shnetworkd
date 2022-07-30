@@ -27,7 +27,7 @@ log_tofile() {
         cat 1>&2
         return 0
     fi
-    cat 2>&1 tee -a "$file" 1>&2
+    cat 2>&1 | tee -a "$file" 1>&2
 }
 
 require() {
