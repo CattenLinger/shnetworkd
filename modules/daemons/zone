@@ -15,6 +15,7 @@ __daemon_zone() {
     use ShutdownHook
 
     local log_file="$RUNTIME_DIR/log"
+    touch "$log_file"
 
     local zone_up_file="$RUNTIME_DIR/zone_up"
     local zone_down_file="$RUNTIME_DIR/zone_down"
